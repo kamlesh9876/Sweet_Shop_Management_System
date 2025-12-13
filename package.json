@@ -4,10 +4,25 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "frontend-dev": "cd frontend && npm run dev",
+    "backend-dev": "cd backend && npm run dev",
+    "dev": "concurrently \"npm run frontend-dev\" \"npm run backend-dev\"",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kamlesh9876/Sweet_Shop_Management_System.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kamlesh9876/Sweet_Shop_Management_System/issues"
+  },
+  "homepage": "https://github.com/kamlesh9876/Sweet_Shop_Management_System#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
 }
