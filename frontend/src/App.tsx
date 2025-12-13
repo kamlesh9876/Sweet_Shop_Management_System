@@ -1,133 +1,124 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import LoginForm from './components/LoginForm'
 import RegisterForm from './components/RegisterForm'
-import Dashboard from './components/Dashboard'
-import type { Sweet, SweetFilters } from './types/sweet'
+import AdminDashboard from './components/AdminDashboard'
+import EmployeeDashboard from './components/EmployeeDashboard'
+import type { Sweet } from './types/sweet'
+import { authAPI, sweetsAPI } from './services/api'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentView, setCurrentView] = useState<'login' | 'register'>('login')
+  const [sweets, setSweets] = useState<Sweet[]>([])
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
 
-  // Mock data for demonstration
-  const mockSweets: Sweet[] = [
-    {
-      id: '1',
-      name: 'Birthday Cake',
-      category: 'Cakes',
-      price: 12.99,
-      quantity: 10,
-      description: 'Delicious birthday cake with layers of cream',
-      imageUrl: '/images/sweets/Birthday cake-pana.png'
-    },
-    {
-      id: '2',
-      name: 'Sweet Choice',
-      category: 'Candy',
-      price: 5.99,
-      quantity: 0,
-      description: 'Assorted sweet treats',
-      imageUrl: '/images/sweets/Choice-pana.png'
-    },
-    {
-      id: '3',
-      name: 'Chocolate Donut',
-      category: 'Donuts',
-      price: 3.99,
-      quantity: 3,
-      description: 'Glazed chocolate donut with sprinkles',
-      imageUrl: '/images/sweets/Choice-pana.png'
-    },
-    {
-      id: '4',
-      name: 'Vanilla Ice Cream',
-      category: 'Ice Cream',
-      price: 4.99,
-      quantity: 15,
-      description: 'Creamy vanilla ice cream',
-      imageUrl: '/images/sweets/Choice-pana.png'
-    },
-    {
-      id: '5',
-      name: 'Strawberry Pastry',
-      category: 'Pastries',
-      price: 6.99,
-      quantity: 2,
-      description: 'Fresh strawberry pastry with cream',
-      imageUrl: '/images/sweets/Eating healthy food-rafiki.png'
-    },
-    {
-      id: '6',
-      name: 'Chocolate Chip Cookie',
-      category: 'Cookies',
-      price: 2.99,
-      quantity: 20,
-      description: 'Warm chocolate chip cookies',
-      imageUrl: '/images/sweets/Choice-pana.png'
-    },
-    {
-      id: '7',
-      name: 'Red Velvet Cake',
-      category: 'Cakes',
-      price: 15.99,
-      quantity: 8,
-      description: 'Classic red velvet cake with cream cheese frosting',
-      imageUrl: '/images/sweets/Birthday cake-pana.png'
-    },
-    {
-      id: '8',
-      name: 'Gummy Bears',
-      category: 'Candy',
-      price: 1.99,
-      quantity: 50,
-      description: 'Colorful gummy bear candies',
-      imageUrl: '/images/sweets/Choice-pana.png'
+  // Check authentication state on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const user = localStorage.getItem('user')
+    
+    if (token && user) {
+      try {
+        setCurrentUser(JSON.parse(user))
+        setIsAuthenticated(true)
+      } catch (error) {
+        console.error('Failed to parse user data:', error)
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+      }
     }
-  ]
+  }, [])
 
-  const handleLogin = (credentials: { email: string; password: string }) => {
-    console.log('Login:', credentials)
-    setIsAuthenticated(true)
+  // Load sweets from API when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadSweets()
+    }
+  }, [isAuthenticated])
+
+  // Debug: Monitor sweets changes
+  useEffect(() => {
+    console.log('Sweets array changed:', sweets)
+    console.log('Current sweets count:', sweets.length)
+  }, [sweets])
+
+  const loadSweets = async () => {
+    try {
+      setLoading(true)
+      console.log('Loading sweets from API...')
+      const data = await sweetsAPI.getAll()
+      console.log('Sweets loaded from API:', data)
+      console.log('Number of sweets:', data.length)
+      setSweets(data)
+      console.log('Sweets state updated')
+    } catch (error) {
+      console.error('Failed to load sweets:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleRegister = (credentials: { email: string; password: string; confirmPassword: string }) => {
-    console.log('Register:', credentials)
-    setIsAuthenticated(true)
+  const handleLogin = async (credentials: { email: string; password: string }) => {
+    try {
+      setLoading(true)
+      const response = await authAPI.login(credentials.email, credentials.password)
+      localStorage.setItem('token', response.token)
+      localStorage.setItem('user', JSON.stringify(response.user))
+      setCurrentUser(response.user)
+      setIsAuthenticated(true)
+    } catch (error: any) {
+      console.error('Login failed:', error)
+      alert(error.response?.data?.error || 'Login failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRegister = async (credentials: { email: string; password: string; confirmPassword: string; name: string; role: 'admin' | 'employee'; }) => {
+    try {
+      setLoading(true)
+      const response = await authAPI.register(credentials.name, credentials.email, credentials.password, credentials.role)
+      localStorage.setItem('token', response.token)
+      setCurrentUser(response.user)
+      setIsAuthenticated(true)
+    } catch (error: any) {
+      console.error('Register failed:', error)
+      alert(error.response?.data?.error || 'Registration failed')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
     setIsAuthenticated(false)
+    setCurrentUser(null)
+    setSweets([])
     setCurrentView('login')
   }
 
-  const handlePurchase = (sweetId: string) => {
-    console.log('Purchase:', sweetId)
+  const handleRestock = async (sweetId: string, quantity: number) => {
+    try {
+      await sweetsAPI.restock(sweetId, quantity)
+      await loadSweets()
+      alert('Sweet restocked successfully!')
+    } catch (error: any) {
+      console.error('Restock failed:', error)
+      alert(error.response?.data?.error || 'Restock failed')
+    }
   }
 
-  const handleFilterChange = (filters: SweetFilters) => {
-    console.log('Filter:', filters)
-  }
-
-  const handleEditSweet = (sweetId: string) => {
-    console.log('Edit sweet:', sweetId)
-  }
-
-  const handleDeleteSweet = (sweetId: string) => {
-    console.log('Delete sweet:', sweetId)
-  }
-
-  const handleRestock = (sweetId: string, quantity: number) => {
-    console.log('Restock sweet:', sweetId, quantity)
-  }
-
-  const handleAddSweet = (sweet: Omit<Sweet, 'id'>) => {
-    console.log('Add sweet:', sweet)
+  const handleSweetsUpdate = async () => {
+    console.log('Refreshing sweets data...')
+    await loadSweets()
   }
 
   // If authenticated, show dashboard
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-        <div className="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gray-50">
           <div className="flex justify-between items-center mb-8">
             <h1 className="header-title">
               Sweet Shop Dashboard
@@ -140,18 +131,21 @@ function App() {
             </button>
           </div>
           
-          <Dashboard 
-            sweets={mockSweets}
-            onPurchase={handlePurchase}
-            onFilterChange={handleFilterChange}
-            onEditSweet={handleEditSweet}
-            onDeleteSweet={handleDeleteSweet}
-            onRestock={handleRestock}
-            onAddSweet={handleAddSweet}
-            userRole="admin"
-            currentUser={{ id: '1', name: 'Admin User', email: 'admin@sweetshop.com' }}
-          />
-        </div>
+          {currentUser?.role === 'admin' ? (
+            <AdminDashboard 
+              sweets={sweets}
+              currentUser={currentUser}
+              loading={loading}
+              onSweetsUpdate={handleSweetsUpdate}
+            />
+          ) : (
+            <EmployeeDashboard 
+              sweets={sweets}
+              onRestock={handleRestock}
+              currentUser={currentUser}
+              loading={loading}
+            />
+          )}
       </div>
     )
   }
@@ -238,11 +232,11 @@ function App() {
             {/* Perfect Content */}
             <div className="perfect-glass-card p-8 animate-fade-in-up perfect-hover-lift">
               {currentView === 'login' && (
-                <LoginForm onSubmit={handleLogin} />
+                <LoginForm onSubmit={handleLogin} isLoading={loading} />
               )}
               
               {currentView === 'register' && (
-                <RegisterForm onSubmit={handleRegister} />
+                <RegisterForm onSubmit={handleRegister} isLoading={loading} />
               )}
             </div>
           </div>

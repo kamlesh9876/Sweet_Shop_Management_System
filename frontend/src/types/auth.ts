@@ -1,7 +1,7 @@
 export interface User {
   id: string;
   email: string;
-  role: 'admin' | 'customer';
+  role: 'admin' | 'employee';
 }
 
 export interface AuthResponse {
@@ -16,4 +16,6 @@ export interface LoginCredentials {
 
 export interface RegisterCredentials extends LoginCredentials {
   confirmPassword: string;
+  name: string;
+  role: 'admin' | 'employee';
 }
