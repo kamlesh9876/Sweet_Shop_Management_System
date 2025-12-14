@@ -2,6 +2,20 @@
 
 A full-stack web application for managing sweet shop inventory, orders, and user authentication with role-based access control.
 
+## Screenshots
+
+### Login Page
+![Login Page](image.png)
+
+### Admin Dashboard - Product Management
+![Admin Dashboard](Screenshot%202025-12-14%20205450.png)
+
+### Product Catalog View
+![Product Catalog](Screenshot%202025-12-14%20210143.png)
+
+### Order Management
+![Order Management](Screenshot%202025-12-14%20210235.png)
+
 ## Frontend Development Guide
 
 ### React + TypeScript + Vite
