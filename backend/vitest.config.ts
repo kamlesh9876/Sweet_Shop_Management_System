@@ -4,7 +4,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    setupFiles: ['./test/setup.ts']
+    setupFiles: ['./test/setup.ts'],
+    env: {
+      NODE_ENV: 'test',
+      JWT_SECRET: 'test-secret-key'
+    }
   },
   resolve: {
     alias: {

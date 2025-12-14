@@ -1,14 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import bcrypt from 'bcryptjs'
 import request from 'supertest'
 import app from '../src/index'
 import sqlite3 from 'sqlite3'
 import { testDb } from './setup'
 
 beforeEach(async () => {
-  // Clear database before each test
-  await new Promise<void>((resolve) => {
-    testDb.run('DELETE FROM users', () => resolve())
-  })
+  // Database is already cleaned in setup.ts beforeEach
 })
 
 afterEach(async () => {
@@ -43,7 +41,7 @@ describe('Authentication Endpoints', () => {
     it('should return 400 when registering with existing email', async () => {
       const userData = {
         name: 'Test User',
-        email: 'test@example.com',
+        email: 'duplicate@example.com',
         password: 'password123',
         role: 'employee'
       }
@@ -68,10 +66,10 @@ describe('Authentication Endpoints', () => {
         .post('/api/auth/register')
         .send({
           name: 'Test User',
-          email: 'test@example.com'
+          email: 'missingfield@example.com'
           // Missing password
         })
-        .expect(500) // Currently returns 500 due to missing password hashing
+        .expect(400)
 
       expect(response.body.error).toBeDefined()
     })
@@ -83,8 +81,8 @@ describe('Authentication Endpoints', () => {
       await request(app)
         .post('/api/auth/register')
         .send({
-          name: 'Test User',
-          email: 'test@example.com',
+          name: 'Login Test User',
+          email: 'logintest@example.com',
           password: 'password123',
           role: 'employee'
         })
@@ -94,21 +92,21 @@ describe('Authentication Endpoints', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'test@example.com',
+          email: 'logintest@example.com',
           password: 'password123'
         })
         .expect(200)
 
       expect(response.body).toHaveProperty('token')
       expect(response.body).toHaveProperty('user')
-      expect(response.body.user.email).toBe('test@example.com')
+      expect(response.body.user.email).toBe('logintest@example.com')
     })
 
     it('should return 401 with wrong password', async () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'test@example.com',
+          email: 'logintest@example.com',
           password: 'wrongpassword'
         })
         .expect(401)

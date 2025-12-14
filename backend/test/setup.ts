@@ -1,4 +1,4 @@
-import { beforeAll, afterAll } from 'vitest'
+import { beforeAll, afterAll, beforeEach } from 'vitest'
 import sqlite3 from 'sqlite3'
 
 export let testDb: sqlite3.Database
@@ -59,6 +59,19 @@ beforeAll(async () => {
       `, (err) => {
         if (err) reject(err)
         else resolve()
+      })
+    })
+  })
+})
+
+beforeEach(async () => {
+  // Clean test data between tests
+  await new Promise<void>((resolve) => {
+    testDb.run('DELETE FROM order_items', () => {
+      testDb.run('DELETE FROM orders', () => {
+        testDb.run('DELETE FROM sweets', () => {
+          testDb.run('DELETE FROM users', resolve)
+        })
       })
     })
   })

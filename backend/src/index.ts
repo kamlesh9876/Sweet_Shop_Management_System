@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import helmet from 'helmet';
 import authRoutes from './routes/auth';
 import sweetRoutes from './routes/sweets';
 import employeeRoutes from './routes/employees';
@@ -9,7 +10,26 @@ import './models/database';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// CORS configuration
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:5174'],
   credentials: true,
@@ -18,16 +38,8 @@ app.use(cors({
 }));
 
 app.use(morgan('combined'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Remove security headers after all other middleware
-app.use((req, res, next) => {
-  res.setHeader('Content-Security-Policy', '');
-  res.setHeader('Cross-Origin-Opener-Policy', '');
-  res.setHeader('Cross-Origin-Resource-Policy', '');
-  next();
-});
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
 app.use('/api/auth', authRoutes);

@@ -8,6 +8,11 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password }: RegisterRequest = req.body;
 
+    // Validate required fields
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
     // Check if user already exists
     db.get('SELECT id FROM users WHERE email = ?', [email], async (err, row) => {
       if (err) {
@@ -59,6 +64,11 @@ export const register = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password }: LoginRequest = req.body;
+
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
 
     db.get(
       'SELECT * FROM users WHERE email = ?',
